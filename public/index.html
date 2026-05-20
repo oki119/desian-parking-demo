@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+  <title>차량 주차 위치 자동 검색</title>
+  <style>
+    :root {
+      --navy: #15274a;
+      --yellow: #f3d420;
+      --bg: #eef0f4;
+      --text: #263041;
+      --muted: #6f7785;
+      --line: #dde1e8;
+      --danger: #c03535;
+      --ok: #176c43;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Noto Sans KR", "Noto Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--navy);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      background: var(--bg);
+    }
+
+    .app.input-mode {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: max(14px, env(safe-area-inset-top)) 20px 14px;
+      color: var(--text);
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(24, 32, 46, .14);
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .screen {
+      padding: 24px clamp(14px, 4vw, 20px) calc(32px + env(safe-area-inset-bottom));
+    }
+
+    .input-screen {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: calc(28px + env(safe-area-inset-top)) clamp(18px, 6vw, 28px) calc(28px + env(safe-area-inset-bottom));
+      text-align: center;
+    }
+
+    .site-name {
+      margin: 0 0 10px;
+      color: #fff;
+      font-size: clamp(26px, 7vw, 34px);
+      font-weight: 900;
+      line-height: 1.22;
+      letter-spacing: 0;
+      overflow-wrap: keep-all;
+      word-break: keep-all;
+    }
+
+    .brand {
+      margin: 0 0 8px;
+      color: #fff;
+      font-size: clamp(22px, 6vw, 30px);
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: 0;
+      overflow-wrap: keep-all;
+      word-break: keep-all;
+    }
+
+    .subtitle {
+      margin: 0 0 34px;
+      color: rgba(255, 255, 255, .78);
+      font-size: 15px;
+      line-height: 1.55;
+      overflow-wrap: keep-all;
+      word-break: keep-all;
+    }
+
+    .plate-input {
+      width: 100%;
+      max-width: min(260px, 88vw);
+      margin: 0 auto 18px;
+      padding: 12px 14px;
+      border: 2px solid rgba(255, 255, 255, .85);
+      border-radius: 8px;
+      color: #fff;
+      background: transparent;
+      text-align: center;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 10px;
+      caret-color: var(--yellow);
+    }
+
+    .plate-input::placeholder {
+      color: rgba(255, 255, 255, .38);
+    }
+
+    .plate-input:focus {
+      outline: 3px solid rgba(243, 212, 32, .24);
+      border-color: var(--yellow);
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 28px;
+      padding: 12px 18px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .primary-btn {
+      color: var(--navy);
+      background: var(--yellow);
+    }
+
+    .secondary-btn {
+      color: var(--navy);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .danger-btn {
+      color: #fff;
+      background: var(--danger);
+    }
+
+    .message {
+      margin: 16px 0 0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      line-height: 1.45;
+      font-size: 14px;
+      text-align: left;
+      border: 1px solid var(--line);
+      white-space: pre-line;
+    }
+
+    .input-screen .message {
+      background: rgba(255, 255, 255, .1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, .18);
+    }
+
+    .message.error {
+      color: #7d1f1f;
+      background: #fff2f2;
+      border-color: #f0c6c6;
+    }
+
+    .message.notice {
+      color: #564800;
+      background: #fff9d8;
+      border-color: #f0df72;
+    }
+
+    .message.ok {
+      color: var(--ok);
+      background: #eaf8f0;
+      border-color: #bfe6d0;
+    }
+
+    .message.center {
+      text-align: center;
+    }
+
+    .privacy {
+      margin: 22px 0 0;
+      color: rgba(255, 255, 255, .72);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: keep-all;
+      word-break: keep-all;
+    }
+
+    .loading {
+      padding: 70px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      border: 4px solid #d8deea;
+      border-top-color: var(--navy);
+      animation: spin .9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .card {
+      overflow: hidden;
+      margin: 0 0 16px;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 5px 14px rgba(24, 32, 46, .12);
+    }
+
+    .photo-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #d8dde7;
+    }
+
+    .photo-wrap img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .image-fallback {
+      display: none;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.45;
+      background: #f3f5f8;
+    }
+
+    .photo-wrap.failed img {
+      display: none;
+    }
+
+    .photo-wrap.failed .image-fallback {
+      display: flex;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .plate-label {
+      margin: 0 0 10px;
+      color: var(--navy);
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 8px 10px;
+      margin: 0 0 16px;
+      font-size: 15px;
+      line-height: 1.45;
+      text-align: left;
+    }
+
+    .meta dt {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .meta dd {
+      margin: 0;
+      color: var(--text);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      text-align: left;
+    }
+
+    .meta .plate-value {
+      color: var(--navy);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .location-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin: 14px -16px 16px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .location-cell {
+      padding: 13px 8px;
+      text-align: center;
+      border-left: 1px solid var(--line);
+    }
+
+    .location-cell:first-child {
+      border-left: 0;
+    }
+
+    .location-cell span {
+      display: block;
+      margin-top: 4px;
+      color: #105cb5;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .detail-actions {
+      display: grid;
+      gap: 10px;
+      padding: 0 clamp(14px, 4vw, 20px) calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .list-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 360px) {
+      .meta {
+        grid-template-columns: 72px minmax(0, 1fr);
+        font-size: 14px;
+      }
+
+      .meta .plate-value {
+        font-size: 20px;
+      }
+
+      .location-cell span {
+        font-size: 21px;
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <main id="app" class="app input-mode">
+    <section id="inputScreen" class="input-screen">
+      <p class="site-name">광명유플래닛데시앙</p>
+      <h1 class="brand">차량 주차 위치 검색</h1>
+      <p class="subtitle">차량번호 4자리를 등록하면 다음 접속부터 자동으로 위치를 검색합니다.</p>
+      <input id="plateInput" class="plate-input" type="tel" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="0000" aria-label="차량번호 4자리">
+      <button id="searchButton" class="primary-btn" type="button">검색</button>
+      <div id="inputMessage" class="message hidden" role="status"></div>
+      <p class="privacy">공용기기에서는 등록하지 마세요. 이 페이지는 전체 차량번호를 저장하지 않고, 차량번호 4자리와 차량 식별값만 이 브라우저에 저장합니다.</p>
+    </section>
+
+    <section id="loadingScreen" class="screen hidden">
+      <div class="loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loadingText">주차 위치를 검색하고 있습니다.</p>
+      </div>
+    </section>
+
+    <section id="listScreen" class="hidden">
+      <div class="topbar">차량 선택</div>
+      <div class="screen">
+        <div id="listMessage" class="message notice hidden" role="status"></div>
+        <div id="listContainer"></div>
+        <div class="list-actions">
+          <button id="listAddButton" class="secondary-btn" type="button">다른 차량 추가</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="detailScreen" class="hidden">
+      <div class="topbar">내 차량 위치</div>
+      <div class="screen">
+        <div id="detailMessage" class="message ok hidden" role="status"></div>
+      <div id="detailContainer"></div>
+      </div>
+      <div class="detail-actions">
+        <button id="addButton" class="secondary-btn" type="button">다른 차량 추가</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SITE_ID = 'S_DESIAN_GM';
+    const INTERNAL_API_URL = '/api/search';
+    const IMG_BASE_URL = 'https://skt.binzary.com:9932/';
+    const STORAGE_KEY = 'desianGmParkingVehicle';
+
+    const app = document.getElementById('app');
+    const inputScreen = document.getElementById('inputScreen');
+    const loadingScreen = document.getElementById('loadingScreen');
+    const listScreen = document.getElementById('listScreen');
+    const detailScreen = document.getElementById('detailScreen');
+    const plateInput = document.getElementById('plateInput');
+    const searchButton = document.getElementById('searchButton');
+    const inputMessage = document.getElementById('inputMessage');
+    const loadingText = document.getElementById('loadingText');
+    const listMessage = document.getElementById('listMessage');
+    const listContainer = document.getElementById('listContainer');
+    const detailMessage = document.getElementById('detailMessage');
+    const detailContainer = document.getElementById('detailContainer');
+    const listAddButton = document.getElementById('listAddButton');
+    const addButton = document.getElementById('addButton');
+
+    let currentPlateNo = '';
+    let currentSavedVehicle = null;
+    let isAddingVehicle = false;
+
+    function showScreen(name) {
+      inputScreen.classList.toggle('hidden', name !== 'input');
+      loadingScreen.classList.toggle('hidden', name !== 'loading');
+      listScreen.classList.toggle('hidden', name !== 'list');
+      detailScreen.classList.toggle('hidden', name !== 'detail');
+      app.classList.toggle('input-mode', name === 'input');
+    }
+
+    function setMessage(element, text, type) {
+      element.textContent = text || '';
+      element.className = 'message';
+      if (type) {
+        type.split(' ').filter(Boolean).forEach(className => element.classList.add(className));
+      }
+      element.classList.toggle('hidden', !text);
+    }
+
+    function normalizePlateNo(value) {
+      return String(value || '').replace(/\D/g, '').slice(0, 4);
+    }
+
+    function isValidPlateNo(value) {
+      return /^\d{4}$/.test(value);
+    }
+
+    function normalizeSavedVehicle(saved) {
+      if (!saved || saved.siteId !== SITE_ID || !isValidPlateNo(saved.plateNo)) return null;
+      return {
+        siteId: saved.siteId,
+        plateNo: saved.plateNo,
+        guidanceCurrentPk: saved.guidanceCurrentPk || null,
+        guidanceEventPk: saved.guidanceEventPk || null,
+        slotId: saved.slotId || '',
+        registeredAt: saved.registeredAt || new Date().toISOString()
+      };
+    }
+
+    function getSavedVehicles() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        const savedItems = Array.isArray(parsed) ? parsed : [parsed];
+        return savedItems.map(normalizeSavedVehicle).filter(Boolean);
+      } catch (error) {
+        localStorage.removeItem(STORAGE_KEY);
+        return [];
+      }
+    }
+
+    function getSavedVehicle() {
+      return currentSavedVehicle || getSavedVehicles()[0] || null;
+    }
+
+    function sameSavedVehicle(saved, candidate) {
+      if (!saved || !candidate || saved.plateNo !== candidate.plateNo) return false;
+      if (saved.guidanceCurrentPk && candidate.guidanceCurrentPk) {
+        return saved.guidanceCurrentPk === candidate.guidanceCurrentPk;
+      }
+      if (saved.slotId && candidate.slotId) {
+        return saved.slotId === candidate.slotId;
+      }
+      return false;
+    }
+
+    function vehicleToSavedData(item, plateNo) {
+      const location = item.location || {};
+      const site = item.site || {};
+      const savedPlateNo = item.plateNo || plateNo;
+      return {
+        siteId: site.siteId || SITE_ID,
+        plateNo: savedPlateNo,
+        guidanceCurrentPk: item.guidanceCurrentPk || null,
+        guidanceEventPk: item.guidanceEventPk || null,
+        slotId: location.slotId || '',
+        registeredAt: new Date().toISOString()
+      };
+    }
+
+    function saveVehicle(item, plateNo) {
+      const data = vehicleToSavedData(item, plateNo);
+      const savedVehicles = getSavedVehicles();
+      const existingIndex = savedVehicles.findIndex(saved => sameSavedVehicle(saved, data));
+
+      if (existingIndex >= 0) {
+        savedVehicles[existingIndex] = data;
+      } else {
+        savedVehicles.push(data);
+      }
+
+      currentSavedVehicle = data;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedVehicles));
+    }
+
+    function removeSavedVehicle(savedToRemove) {
+      if (!savedToRemove) return getSavedVehicles();
+
+      const remainingVehicles = getSavedVehicles().filter(saved => !sameSavedVehicle(saved, savedToRemove));
+      if (remainingVehicles.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remainingVehicles));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      currentSavedVehicle = null;
+      return remainingVehicles;
+    }
+
+    function clearSavedVehicle() {
+      localStorage.removeItem(STORAGE_KEY);
+      currentPlateNo = '';
+      currentSavedVehicle = null;
+      isAddingVehicle = false;
+      plateInput.value = '';
+      setMessage(inputMessage, '', '');
+      showScreen('input');
+      setTimeout(() => plateInput.focus(), 50);
+    }
+
+    function showInputForAdditionalVehicle() {
+      currentPlateNo = '';
+      currentSavedVehicle = null;
+      isAddingVehicle = true;
+      plateInput.value = '';
+      setMessage(inputMessage, '추가할 차량번호 4자리를 입력해주세요.', 'notice');
+      showScreen('input');
+      setTimeout(() => plateInput.focus(), 50);
+    }
+
+    function renderEmptyResults(messageText, messageType) {
+      currentPlateNo = '';
+      listContainer.replaceChildren();
+      setMessage(listMessage, messageText || '', messageType || 'notice');
+      showScreen('list');
+    }
+
+    function showInitialScreenAfterAllDeleted() {
+      currentPlateNo = '';
+      currentSavedVehicle = null;
+      isAddingVehicle = false;
+      plateInput.value = '';
+      showScreen('input');
+      setMessage(inputMessage, '등록된 차량이 모두 삭제되었습니다.', 'ok');
+    }
+
+    async function fetchVehicles(plateNo) {
+      if (location.protocol === 'file:') {
+        throw new Error('HTML 파일을 직접 열면 검색할 수 없습니다. 서버 실행 후 http://localhost:3000 으로 접속해주세요.');
+      }
+
+      const params = new URLSearchParams({ plateNo });
+      const response = await fetch(`${INTERNAL_API_URL}?${params.toString()}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || `검색 API 오류 (${response.status})`);
+      }
+
+      return Array.isArray(data.items) ? data.items : [];
+    }
+
+    function getImageUrl(item) {
+      if (!item || !item.slotImg) return '';
+      return `${IMG_BASE_URL}${(item.site && item.site.siteId) || SITE_ID}/slots/${item.slotImg}`;
+    }
+
+    function createVehicleCard(item, options) {
+      const location = item.location || {};
+      const site = item.site || {};
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      const imageUrl = getImageUrl(item);
+      const actionClass = options.actionKind === 'delete' ? 'danger-btn' : 'primary-btn';
+      const actionText = options.actionText || '이 차량 선택';
+      card.innerHTML = `
+        <div class="photo-wrap">
+          ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="차량 사진">` : ''}
+          <div class="image-fallback">차량 사진을 불러올 수 없습니다</div>
+        </div>
+        <div class="card-body">
+          <dl class="meta">
+            <dt>차량번호</dt>
+            <dd class="plate-value">${escapeHtml(item.plateNo || options.plateNo)}</dd>
+            <dt>촬영시각</dt>
+            <dd>${escapeHtml(item.detectionTime || '-')}</dd>
+            <dt>주차장</dt>
+            <dd>${escapeHtml(site.siteName || '태영광명데시앙')}</dd>
+          </dl>
+          <div class="location-grid">
+            <div class="location-cell">주차층<span>${escapeHtml(location.floorName || '-')}</span></div>
+            <div class="location-cell">기둥번호<span>${escapeHtml(location.blockName || '-')}</span></div>
+          </div>
+          ${options.selectable ? `<button class="${actionClass}" type="button" data-card-action>${escapeHtml(actionText)}</button>` : ''}
+        </div>
+      `;
+
+      const photoWrap = card.querySelector('.photo-wrap');
+      const image = card.querySelector('img');
+      if (!image) {
+        photoWrap.classList.add('failed');
+      } else {
+        image.addEventListener('error', () => {
+          photoWrap.classList.add('failed');
+        });
+      }
+
+      if (options.selectable) {
+        const button = card.querySelector('[data-card-action]');
+        button.addEventListener('click', () => {
+          const plateNo = item.plateNo || options.plateNo;
+          const currentSavedData = vehicleToSavedData(item, plateNo);
+
+          if (options.actionKind === 'delete') {
+            removeSavedVehicle(currentSavedData);
+            const remainingVehicles = getSavedVehicles();
+            if (remainingVehicles.length > 0) {
+              runSavedVehiclesSearch(remainingVehicles);
+            } else {
+              showInitialScreenAfterAllDeleted();
+            }
+            return;
+          }
+
+          const alreadyRegistered = getSavedVehicles().some(saved => sameSavedVehicle(saved, currentSavedData));
+          saveVehicle(item, plateNo);
+          if (options.stayOnList) {
+            isAddingVehicle = false;
+            const savedVehicles = getSavedVehicles();
+            if (savedVehicles.length > 0) {
+              runSavedVehiclesSearch(savedVehicles);
+            } else {
+              renderList(options.listItems || [], options.plateNo, '', '');
+            }
+            return;
+          }
+
+          renderDetail(item, plateNo, alreadyRegistered ? '변경되었습니다.' : '등록되었습니다.');
+        });
+      }
+
+      return card;
+    }
+
+    function renderList(items, plateNo, noticeText, messageType) {
+      currentPlateNo = plateNo;
+      listContainer.replaceChildren();
+      setMessage(listMessage, noticeText || '', noticeText ? (messageType || 'notice') : '');
+
+      const savedVehicles = getSavedVehicles();
+      items.forEach(item => {
+        const itemPlateNo = item.plateNo || plateNo;
+        const savedData = vehicleToSavedData(item, itemPlateNo);
+        const alreadyRegistered = savedVehicles.some(saved => sameSavedVehicle(saved, savedData));
+        listContainer.appendChild(createVehicleCard(item, {
+          plateNo,
+          selectable: true,
+          stayOnList: true,
+          actionKind: alreadyRegistered ? 'delete' : 'register',
+          actionText: alreadyRegistered ? '삭제' : '이 차량 등록',
+          listItems: items
+        }));
+      });
+
+      showScreen('list');
+    }
+
+    function renderDetail(item, plateNo, messageText) {
+      currentPlateNo = item.plateNo || plateNo;
+      setMessage(detailMessage, messageText || '', messageText ? 'ok' : '');
+      detailContainer.replaceChildren(createVehicleCard(item, {
+        plateNo: currentPlateNo,
+        selectable: true,
+        stayOnList: true,
+        actionKind: 'delete',
+        actionText: '삭제',
+        listItems: [item]
+      }));
+      showScreen('detail');
+    }
+
+    function findSavedMatch(items, saved) {
+      return items.find(item => {
+        const location = item.location || {};
+        const currentMatches = saved.guidanceCurrentPk && item.guidanceCurrentPk === saved.guidanceCurrentPk;
+        const slotMatches = saved.slotId && location.slotId === saved.slotId;
+        return currentMatches || slotMatches;
+      }) || null;
+    }
+
+    async function runSearch(plateNo, options) {
+      const isAuto = options && options.auto;
+      const saved = options && options.saved;
+
+      if (!isValidPlateNo(plateNo)) {
+        showScreen('input');
+        setMessage(inputMessage, '차량번호 4자리를 숫자로 입력해주세요.', 'error');
+        return;
+      }
+
+      currentPlateNo = plateNo;
+      loadingText.textContent = isAuto ? '등록된 차량 정보를 자동으로 검색하고 있습니다.' : '주차 위치를 검색하고 있습니다.';
+      setMessage(inputMessage, '', '');
+      showScreen('loading');
+
+      try {
+        const items = await fetchVehicles(plateNo);
+
+        if (items.length === 0) {
+          showScreen('input');
+          plateInput.value = plateNo;
+          setMessage(inputMessage, `고객님의 ${plateNo} 차량은 현재 주차장에 없습니다.\n다시 검색해 주시기 바랍니다.`, 'error center');
+          return;
+        }
+
+        if (items.length === 1) {
+          saveVehicle(items[0], plateNo);
+          if (isAddingVehicle) {
+            isAddingVehicle = false;
+            runSavedVehiclesSearch(getSavedVehicles());
+            return;
+          }
+          renderDetail(items[0], plateNo, isAuto ? '' : '등록되었습니다.');
+          return;
+        }
+
+        if (isAuto && saved) {
+          const matched = findSavedMatch(items, saved);
+          if (matched) {
+            saveVehicle(matched, plateNo);
+            renderDetail(matched, plateNo);
+            return;
+          }
+
+          renderList(items, plateNo, '내 차량을 다시 선택해주세요.');
+          return;
+        }
+
+        renderList(items, plateNo, '');
+      } catch (error) {
+        showScreen('input');
+        plateInput.value = plateNo;
+        setMessage(inputMessage, `검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요. (${error.message})`, 'error');
+      }
+    }
+
+    async function runSavedVehiclesSearch(savedVehicles, options) {
+      const doneMessage = options && options.doneMessage;
+      const uniqueSavedVehicles = savedVehicles.filter((saved, index, all) => {
+        return all.findIndex(item => sameSavedVehicle(item, saved)) === index;
+      });
+
+      if (uniqueSavedVehicles.length === 0) {
+        showInitialScreenAfterAllDeleted();
+        return;
+      }
+
+      loadingText.textContent = '등록된 차량 정보를 자동으로 검색하고 있습니다.';
+      setMessage(inputMessage, '', '');
+      showScreen('loading');
+
+      try {
+        const settled = await Promise.all(uniqueSavedVehicles.map(async saved => {
+          const items = await fetchVehicles(saved.plateNo);
+          if (items.length === 1) {
+            return { saved, item: items[0], needsSelection: false };
+          }
+
+          const matched = findSavedMatch(items, saved);
+          return {
+            saved,
+            item: matched,
+            items,
+            needsSelection: items.length > 1 && !matched
+          };
+        }));
+
+        const matchedItems = settled.filter(result => result.item).map(result => {
+          saveVehicle(result.item, result.saved.plateNo);
+          return result.item;
+        });
+        const needsSelection = settled.find(result => result.needsSelection);
+
+        if (needsSelection) {
+          const message = doneMessage ? `${doneMessage} 내 차량을 다시 선택해주세요.` : '내 차량을 다시 선택해주세요.';
+          renderList(needsSelection.items, needsSelection.saved.plateNo, message);
+          return;
+        }
+
+        if (matchedItems.length === 1) {
+          renderDetail(matchedItems[0], matchedItems[0].plateNo, doneMessage || '');
+          return;
+        }
+
+        if (matchedItems.length > 1) {
+          const message = doneMessage
+            ? `${doneMessage} 등록된 차량 ${matchedItems.length}대를 찾았습니다.`
+            : `등록된 차량 ${matchedItems.length}대를 찾았습니다.`;
+          renderList(matchedItems, '', message, doneMessage ? 'ok' : 'notice');
+          return;
+        }
+
+        renderEmptyResults(doneMessage ? `${doneMessage} 등록된 차량의 검색 결과가 없습니다.` : '등록된 차량의 검색 결과가 없습니다. 차량번호를 다시 등록해주세요.', doneMessage ? 'ok' : 'error');
+      } catch (error) {
+        showScreen('input');
+        setMessage(inputMessage, `자동 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요. (${error.message})`, 'error');
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    plateInput.addEventListener('input', () => {
+      plateInput.value = normalizePlateNo(plateInput.value);
+      if (plateInput.value.length === 4) {
+        setMessage(inputMessage, '', '');
+      }
+    });
+
+    searchButton.addEventListener('click', () => {
+      runSearch(normalizePlateNo(plateInput.value), { auto: false });
+    });
+
+    plateInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        runSearch(normalizePlateNo(plateInput.value), { auto: false });
+      }
+    });
+
+    listAddButton.addEventListener('click', showInputForAdditionalVehicle);
+    addButton.addEventListener('click', showInputForAdditionalVehicle);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (location.protocol === 'file:') {
+        showScreen('input');
+        setMessage(inputMessage, 'HTML 파일을 직접 열면 검색 API에 연결할 수 없습니다. 터미널에서 npm.cmd start를 실행한 뒤 http://localhost:3000 으로 접속해주세요.', 'error');
+        return;
+      }
+
+      const savedVehicles = getSavedVehicles();
+      if (savedVehicles.length > 1) {
+        runSavedVehiclesSearch(savedVehicles);
+        return;
+      }
+
+      const saved = savedVehicles[0] || null;
+      if (saved) {
+        runSearch(saved.plateNo, {
+          auto: true,
+          saved
+        });
+        return;
+      }
+
+      showScreen('input');
+      plateInput.focus();
+    });
+  </script>
+</body>
+</html>

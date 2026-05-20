@@ -6,13 +6,13 @@
 
 ## Demo
 
-- 배포 URL: Render 배포 주소를 여기에 입력하세요.
-- 테스트 차량번호: 실제 테스트 가능한 4자리 번호를 여기에 입력하세요.
+- 배포 URL: https://desian-parking-demo.onrender.com/
+- 테스트 차량번호: 8111
 
 예시:
 
 ```text
-Demo: https://your-service-name.onrender.com
+Demo: https://desian-parking-demo.onrender.com/
 Test: 8111
 ```
 

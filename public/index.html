@@ -401,6 +401,7 @@
         <div id="listContainer"></div>
         <div class="list-actions">
           <button id="listAddButton" class="secondary-btn" type="button">다른 차량 추가</button>
+          <button id="listClearButton" class="danger-btn hidden" type="button">등록된 차량 모두 삭제</button>
         </div>
       </div>
     </section>
@@ -437,6 +438,7 @@
     const detailMessage = document.getElementById('detailMessage');
     const detailContainer = document.getElementById('detailContainer');
     const listAddButton = document.getElementById('listAddButton');
+    const listClearButton = document.getElementById('listClearButton');
     const addButton = document.getElementById('addButton');
 
     let currentPlateNo = '';
@@ -588,6 +590,13 @@
       setMessage(inputMessage, '등록된 차량이 모두 삭제되었습니다.', 'ok');
     }
 
+    function clearAllSavedVehicles() {
+      if (!confirm('등록된 차량을 모두 삭제할까요?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      listContainer.replaceChildren();
+      showInitialScreenAfterAllDeleted();
+    }
+
     async function fetchVehicles(plateNo) {
       if (location.protocol === 'file:') {
         throw new Error('HTML 파일을 직접 열면 검색할 수 없습니다. 서버 실행 후 http://localhost:3000 으로 접속해주세요.');
@@ -696,6 +705,7 @@
       setMessage(listMessage, noticeText || '', noticeText ? (messageType || 'notice') : '');
 
       const savedVehicles = getSavedVehicles();
+      listClearButton.classList.toggle('hidden', savedVehicles.length < 2);
       items.forEach(item => {
         const itemPlateNo = item.plateNo || plateNo;
         const savedData = vehicleToSavedData(item, itemPlateNo);
@@ -882,6 +892,7 @@
     });
 
     listAddButton.addEventListener('click', showInputForAdditionalVehicle);
+    listClearButton.addEventListener('click', clearAllSavedVehicles);
     addButton.addEventListener('click', showInputForAdditionalVehicle);
 
     document.addEventListener('DOMContentLoaded', () => {

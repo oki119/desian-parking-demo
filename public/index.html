@@ -378,7 +378,7 @@
 <body>
   <main id="app" class="app input-mode">
     <section id="inputScreen" class="input-screen">
-      <p class="site-name">광명유플래닛데시앙</p>
+      <p class="site-name">우리아파트</p>
       <h1 class="brand">차량 주차 위치 검색</h1>
       <p class="subtitle">차량번호 4자리를 등록하면 다음 접속부터 자동으로 위치를 검색합니다.</p>
       <input id="plateInput" class="plate-input" type="tel" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="0000" aria-label="차량번호 4자리">
@@ -633,7 +633,7 @@
             <dt>촬영시각</dt>
             <dd>${escapeHtml(item.detectionTime || '-')}</dd>
             <dt>주차장</dt>
-            <dd>${escapeHtml(site.siteName || '태영광명데시앙')}</dd>
+            <dd>${escapeHtml(site.siteName === '태영광명데시앙' ? '우리아파트' : (site.siteName || '우리아파트'))}</dd>
           </dl>
           <div class="location-grid">
             <div class="location-cell">주차층<span>${escapeHtml(location.floorName || '-')}</span></div>
